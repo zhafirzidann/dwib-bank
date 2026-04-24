@@ -1,0 +1,15 @@
+{"timestamp":"2026-04-23T16:39:20.245722","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:39:54.281313","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:40:24.585588","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:40:55.199726","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:41:25.963692","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:41:57.064654","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:42:27.918415","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:42:58.804806","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:43:29.816816","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:44:00.377759","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:44:31.029858","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:45:01.877812","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:45:32.763996","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:46:02.925299","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2026-04-23T16:46:33.709007","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/exampledag.py","logger":"airflow.models.dagbag.DagBag"}
