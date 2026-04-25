@@ -8,7 +8,7 @@ x-airflow-common: &airflow-common
     - AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-webserver:8080/execution/
     - AIRFLOW__CORE__AUTH_MANAGER=airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
     - AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS=admin:admin
-    - AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORD_FOR_ALL=admin
+    - AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE=/usr/local/airflow/include/passwords.json
     - AIRFLOW__API_AUTH__JWT_SECRET=dwib-bank-airflow-jwt-secret-that-is-long-enough-for-local-dev-2026
     - AIRFLOW__API__SECRET_KEY=dwib-bank-airflow-api-secret-key-that-is-long-enough-for-local-dev-2026
   volumes:
