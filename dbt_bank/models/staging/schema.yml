@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Cleans customer source snapshots and standardizes datatypes.
+    columns:
+      - name: customer_source_id
+        description: Natural customer identifier from the source system.
+        tests: [not_null]
+      - name: gender
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Male', 'Female']
+      - name: valid_from_date
+        tests: [not_null]
+
+  - name: stg_accounts
+    description: Standardized account entities derived from branch and account type.
+    columns:
+      - name: account_id
+        tests: [not_null, unique]
+      - name: account_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Savings', 'Checking', 'Business']
+
+  - name: stg_transactions
+    description: Standardized transaction events.
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: transaction_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Bill Payment', 'Credit', 'Debit', 'Transfer', 'Withdrawal']
+      - name: device_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['ATM', 'Desktop', 'Mobile', 'POS']
