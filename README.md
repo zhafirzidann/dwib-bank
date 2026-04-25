@@ -1,45 +1,86 @@
-Overview
-========
+# DWIB Bank Data Warehouse
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+## Overview
+**DWIB Bank Data Warehouse** adalah proyek *end-to-end* untuk membangun dan mengelola gudang data (**data warehouse**) pada domain perbankan. Proyek ini memanfaatkan **Apache Airflow** sebagai orkestrator alur ETL/ELT, **dbt (data build tool)** untuk transformasi data di dalam *warehouse*, serta **Apache Superset** untuk visualisasi dan pembuatan dasbor. Teknologi yang digunakan bersifat *open source* dan dapat dijalankan sepenuhnya di lingkungan lokal maupun *cloud*.
 
-Project Contents
-================
+Tujuan proyek:
+- Mengekstrak data transaksi, nasabah, dan produk dari sumber operasional (seperti file CSV, database relasional, atau API).
+- Memuat data mentah ke dalam *data warehouse* (PostgreSQL atau *cloud-native* DWH).
+- Melakukan transformasi bertahap (*staging → intermediate → mart*) menggunakan dbt untuk menghasilkan model analitik yang siap konsumsi.
+- Menjadwalkan seluruh alur secara otomatis dengan Airflow DAG.
+- Menyajikan hasil analisis dalam bentuk dasbor interaktif menggunakan Superset.
 
-Your Astro project contains the following files and folders:
+## Project Contents
+Struktur proyek terdiri dari komponen-komponen berikut:
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+- **dags/**: Direktori utama untuk menyimpan definisi Airflow DAG.
+  - `dag_elt_pipeline.py` – DAG utama yang mengatur eksekusi harian: ekstraksi dari sumber, *load* ke staging, menjalankan dbt, dan *refresh* dasbor.
+  - `dag_example_astronauts.py` – Contoh DAG bawaan template Astronomer (dapat dihapus).
+- **dbt/**: Proyek dbt untuk transformasi data.
+  - `models/staging/` – Model awal yang membersihkan dan menstandarkan data mentah.
+  - `models/intermediate/` – Model gabungan untuk logika bisnis (misal: saldo harian, agregasi transaksi).
+  - `models/marts/` – Model akhir (tabel fakta/dimensi) siap untuk visualisasi.
+  - `dbt_project.yml` – Konfigurasi proyek dbt.
+  - `profiles.yml` – Profil koneksi ke data warehouse.
+- **include/**: Berkas tambahan seperti skrip SQL manual, definisi data sumber, atau konfigurasi Superset.
+- **docker-compose.yml**: Definisi layanan yang menjalankan:
+  - **PostgreSQL** – Metadata DB Airflow dan sekaligus *data warehouse* sementara.
+  - **Scheduler** – Penjadwal tugas Airflow.
+  - **API Server** – Airflow UI (port 8080).
+  - **dbt runner** – Container khusus untuk menjalankan perintah dbt.
+  - **Superset** – Platform visualisasi (port 8088).
+- **Dockerfile**: *Custom Airflow image* berdasarkan Astro Runtime, dilengkapi *provider* untuk PostgreSQL, dbt, dan Superset.
+- **requirements.txt**: *Python dependencies* proyek (dbt-core, dbt-postgres, apache-airflow-providers-*).
+- **packages.txt**: Paket level OS (misalnya `libpq-dev` untuk driver PostgreSQL).
+- **airflow_settings.yaml**: Konfigurasi lokal untuk Airflow *Connections*, *Variables*, dan *Pools*, sehingga tidak perlu mengisi manual di UI.
 
-Deploy Your Project Locally
-===========================
+## Deploy Your Project Locally
+Untuk menjalankan seluruh *stack* di mesin lokal, pastikan **Docker** dan **Docker Compose** sudah terpasang.
 
-Start Airflow on your local machine by running 'astro dev start'.
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/zhafirzidann/dwib-bank.git
+   cd dwib-bank
+   ```
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+2. **Jalankan layanan**
+   ```bash
+   docker compose up -d
+   ```
+   Perintah ini akan menyalakan 6 container: Postgres (DWH & metadata), Scheduler, API Server, Triggerer (optional), dbt-runner (untuk menjalankan `dbt debug` saat startup), dan Superset.
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+3. **Akses antar-muka**
+   - Airflow UI: [http://localhost:8080](http://localhost:8080) (login: `admin` / `admin`)
+   - Superset: [http://localhost:8088](http://localhost:8088) (login: `admin` / `admin`)
+   - Postgres DWH: `localhost:5432`, database `dwib_bank`, user `postgres` / `postgres`
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+4. **Inisialisasi dbt & Superset (hanya pertama kali)**
+   - Masuk ke container dbt:
+     ```bash
+     docker exec -it dwib-bank-dbt-runner-1 bash
+     dbt deps
+     dbt run --full-refresh
+     ```
+   - Untuk Superset, lakukan *setup* awal:
+     ```bash
+     docker exec -it dwib-bank-superset-1 superset fab create-admin
+     docker exec -it dwib-bank-superset-1 superset db upgrade
+     docker exec -it dwib-bank-superset-1 superset init
+     ```
+   - Impor dasbor contoh dari folder `include/dashboards/` via UI Superset.
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+5. **Aktifkan DAG ELT**
+   - Buka Airflow UI, *unpause* DAG `dag_elt_pipeline`. DAG akan berjalan sesuai jadwal, atau dapat di-*trigger* manual.
 
-Deploy Your Project to Astronomer
-=================================
+## Deploy Your Project to Production
+Untuk *deployment* di lingkungan produksi, proyek ini dapat dipindahkan ke Astronomer Cloud, Google Cloud Composer, atau instance Airflow mandiri. Pastikan:
+- Data warehouse yang digunakan (misal: BigQuery, Redshift, atau PostgreSQL server) telah dikonfigurasi ulang di `profiles.yml` dan `airflow_settings.yaml`.
+- Variabel sensitif (kredensial) disimpan di Airflow *Secrets Backend*.
+- Konfigurasi CI/CD untuk menjalankan `dbt test` sebelum *deploy*.
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
-
-Contact
-=======
-
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+## Visualisasi
+Dasbor analitik DWIB Bank mencakup:
+- **Tren saldo & transaksi** harian per cabang.
+- **Distribusi produk** (tabungan, deposito, kredit) berdasarkan segmen nasabah.
+- **Monitoring kualitas data** (jumlah *null*, duplikasi, keterlambatan data).
+Semua dasbor dibuat menggunakan Apache Superset dan dapat di-*embed* ke aplikasi internal
