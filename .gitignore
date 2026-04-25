@@ -7,3 +7,14 @@ astro
 .venv
 airflow-webserver.pid
 webserver_config.py
+tugas_data_warehouse.pdf
+logs/
+include/*.duckdb
+data/raw/accounts_raw.csv
+data/raw/customers_raw.csv
+data/raw/transactions_raw.csv
+dbt_bank/logs/
+dbt_bank/.user.yml
+dbt_bank/target/
+superset_home/
+planning/
