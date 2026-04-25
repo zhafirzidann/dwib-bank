@@ -16,7 +16,7 @@ Project ini membangun platform data warehouse modern untuk domain banking menggu
 ### 1. Apache Airflow (Orkestrator)
 Bertindak sebagai "otak" pengatur seluruh pipeline. Airflow menjadwalkan dan memantau tugas mulai dari pengambilan data mentah hingga validasi akhir.
 - **Akses UI**: `http://localhost:8080`
-- **Login**: `admin` / `REktMZUW5aa8gA5y`
+- **Login**: `admin` / `admin`
 
 ### 2. Apache Superset (BI & Visualisasi)
 Platform eksplorasi data yang digunakan untuk menyajikan metrik bisnis dan deteksi fraud dalam bentuk dashboard interaktif.
