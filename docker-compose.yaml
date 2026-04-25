@@ -1,17 +1,22 @@
-version: '3.8'
-
 x-airflow-common: &airflow-common
   build: .
   environment:
     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
     - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
     - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    - AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-webserver:8080/execution/
+    - AIRFLOW__CORE__AUTH_MANAGER=airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
+    - AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS=admin:admin
+    - AIRFLOW__API_AUTH__JWT_SECRET=dwib-bank-airflow-jwt-secret-that-is-long-enough-for-local-dev-2026
+    - AIRFLOW__API__SECRET_KEY=dwib-bank-airflow-api-secret-key-that-is-long-enough-for-local-dev-2026
   volumes:
-    - ./dags:/opt/airflow/dags
-    - ./data:/opt/airflow/data
-    - ./etl:/opt/airflow/etl
-    - ./logs:/opt/airflow/logs
-    - ./include:/opt/airflow/include
+    - ./dags:/usr/local/airflow/dags
+    - ./data:/usr/local/airflow/data
+    - ./etl:/usr/local/airflow/etl
+    - ./dbt_bank:/usr/local/airflow/dbt_bank
+    - ./logs:/usr/local/airflow/logs
+    - ./include:/usr/local/airflow/include
   user: "${AIRFLOW_UID:-50000}:0"          # <-- kunci agar permission cocok dengan host
   depends_on:
     postgres:
@@ -36,21 +41,24 @@ services:
   airflow-init:
     <<: *airflow-common
     user: "${AIRFLOW_UID:-50000}:0"
-    command: >
-      bash -c "
-        airflow db migrate
-      "
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - airflow db migrate
     depends_on:
       postgres:
         condition: service_healthy
 
   airflow-webserver:
     <<: *airflow-common
-    command: webserver
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - airflow api-server
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "airflow", "jobs", "check", "--job-type", "Webserver", "--hostname", "localhost"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -62,9 +70,31 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
-    command: scheduler
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - airflow scheduler
     healthcheck:
-      test: ["CMD", "airflow", "jobs", "check", "--job-type", "Scheduler", "--hostname", "localhost"]
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-dag-processor:
+        condition: service_started
+    restart: always
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - airflow dag-processor
+    healthcheck:
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "DagProcessorJob", "--local"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -74,5 +104,56 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  superset-init:
+    build:
+      context: ./superset
+    environment:
+      - SUPERSET_SECRET_KEY=dwib-bank-superset-secret-key-for-local-development-2026
+      - SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py
+    volumes:
+      - ./include:/app/data
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
+      - superset_home:/app/superset_home
+    command:
+      - /bin/sh
+      - -c
+      - |
+        superset db upgrade && \
+        superset fab create-admin \
+          --username admin \
+          --firstname Superset \
+          --lastname Admin \
+          --email admin@example.com \
+          --password admin || true && \
+        superset init
+
+  superset:
+    build:
+      context: ./superset
+    environment:
+      - SUPERSET_SECRET_KEY=dwib-bank-superset-secret-key-for-local-development-2026
+      - SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py
+    volumes:
+      - ./include:/app/data
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
+      - superset_home:/app/superset_home
+    ports:
+      - "8088:8088"
+    command:
+      - /bin/sh
+      - -c
+      - superset run -h 0.0.0.0 -p 8088 --with-threads
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    restart: always
+
 volumes:
   postgres-db-volume:
+  superset_home:
