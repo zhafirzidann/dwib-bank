@@ -4,7 +4,7 @@ select
     count(*) as total_transactions,
     round(sum(transaction_amount), 2) as total_transaction_amount,
     round(avg(transaction_amount), 2) as avg_transaction_amount
-from marts_marts.fct_transactions
+from marts.fct_transactions
 group by transaction_type
 order by total_transaction_amount desc;
 
@@ -13,8 +13,8 @@ select
     a.bank_branch,
     count(*) as total_transactions,
     round(sum(f.transaction_amount), 2) as total_transaction_amount
-from marts_marts.fct_transactions f
-inner join marts_marts.dim_accounts a
+from marts.fct_transactions f
+inner join marts.dim_accounts a
     on f.account_key = a.account_key
 group by a.bank_branch
 order by total_transaction_amount desc
@@ -29,7 +29,7 @@ select
         100.0 * sum(case when f.is_fraud = 1 then 1 else 0 end) / count(*),
         2
     ) as fraud_rate_pct
-from marts_marts.fct_transactions f
+from marts.fct_transactions f
 group by f.device_type
 order by fraud_rate_pct desc, fraudulent_transactions desc;
 
@@ -39,8 +39,8 @@ select
     c.state,
     count(*) as fraud_transactions,
     round(sum(f.transaction_amount), 2) as fraud_amount
-from marts_marts.fct_transactions f
-inner join marts_marts.dim_customers c
+from marts.fct_transactions f
+inner join marts.dim_customers c
     on f.customer_key = c.customer_key
 where f.is_fraud = 1
 group by c.city, c.state
@@ -53,8 +53,8 @@ select
     count(*) as total_transactions,
     round(sum(f.transaction_amount), 2) as total_transaction_amount,
     sum(case when f.is_fraud = 1 then 1 else 0 end) as total_fraud_transactions
-from marts_marts.fct_transactions f
-inner join marts_marts.dim_date d
+from marts.fct_transactions f
+inner join marts.dim_date d
     on f.transaction_date_key = d.date_key
 group by d.full_date
 order by d.full_date;

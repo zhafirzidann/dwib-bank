@@ -8,7 +8,7 @@ from etl.extract import duckdb_path
 def validate_datamart() -> None:
     con = duckdb.connect(str(duckdb_path()), read_only=True)
     try:
-        mart_schema = "marts_marts"
+        mart_schema = "marts"
         checks = {
             "dim_customers_count": f"SELECT COUNT(*) FROM {mart_schema}.dim_customers",
             "dim_accounts_count": f"SELECT COUNT(*) FROM {mart_schema}.dim_accounts",

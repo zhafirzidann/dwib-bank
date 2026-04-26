@@ -37,6 +37,7 @@ Platform eksplorasi data yang digunakan untuk menyajikan metrik bisnis dan detek
 - `data/raw/`: Lokasi dataset input utama (Sumber: [Kaggle](https://www.kaggle.com/datasets/marusagar/bank-transaction-fraud-detection)).
 - `include/bank_data.duckdb`: Database DuckDB lokal hasil pipeline.
 - `superset/`: Konfigurasi visualisasi dashboard.
+- `superset/exports/dashboard_export_20260426T142813.zip`: Export dashboard Superset yang digunakan pada implementasi project.
 
 ## Menjalankan Pipeline
 
@@ -55,14 +56,22 @@ docker compose exec airflow-scheduler airflow dags trigger etl_bank_transactions
 ### 3. Verifikasi Hasil
 Cek jumlah baris pada tabel utama di DuckDB:
 ```bash
-docker compose exec airflow-scheduler python -c "import duckdb; con=duckdb.connect('/usr/local/airflow/include/bank_data.duckdb', read_only=True); tables=['marts_marts.fct_transactions','marts_marts.dim_customers','marts_marts.dim_accounts','marts_marts.dim_date']; [print(f'{t}={con.execute(f\"select count(*) from {t}\").fetchone()[0]}') for t in tables]; con.close()"
+docker compose exec airflow-scheduler python -c "import duckdb; con=duckdb.connect('/usr/local/airflow/include/bank_data.duckdb', read_only=True); tables=['marts.fct_transactions','marts.dim_customers','marts.dim_accounts','marts.dim_date']; [print(f'{t}={con.execute(f\"select count(*) from {t}\").fetchone()[0]}') for t in tables]; con.close()"
 ```
 
 ## Analisis & Visualisasi
 
 Detail lengkap pertanyaan bisnis dapat dilihat di `analytics/dashboard_business_questions.md`.
 
-Untuk melihat dashboard visual, buka **Apache Superset** di `http://localhost:8088` setelah menjalankan service.
+Untuk melihat dashboard visual, buka **Apache Superset** di `http://localhost:8088` setelah menjalankan service dan pipeline Airflow.
+
+Dashboard yang digunakan pada implementasi project sudah disimpan sebagai export Superset:
+
+```text
+superset/exports/dashboard_export_20260426T142813.zip
+```
+
+File ini dapat di-import kembali melalui Superset setelah Docker berjalan dan data mart sudah terbentuk di DuckDB. Di Superset, masuk ke menu import dashboard, pilih file zip tersebut, lalu import. Dashboard ini membaca dataset dari koneksi DuckDB `dwib_bank_duckdb`.
 
 ## Pengembangan & Testing
 
