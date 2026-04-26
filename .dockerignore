@@ -6,3 +6,10 @@ logs/
 .venv
 airflow.db
 airflow.cfg
+__pycache__/
+.codex/
+planning/
+include/*.duckdb
+dbt_bank/target/
+Bank_Transaction_Fraud_Detection.csv
+data/raw/*.csv
