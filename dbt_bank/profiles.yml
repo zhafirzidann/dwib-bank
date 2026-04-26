@@ -1,0 +1,8 @@
+dwib_bank:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '/usr/local/airflow/include/bank_data.duckdb') }}"
+      threads: 4
+      schema: marts
