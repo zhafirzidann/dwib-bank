@@ -1,87 +1,39 @@
+from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from datetime import datetime
-import pandas as pd
-import duckdb
-import os
+from airflow.providers.standard.operators.python import PythonOperator
 
-def extract_and_load_to_duckdb():
-    csv_file_path = os.path.join(os.environ.get("AIRFLOW_HOME", "/opt/airflow"), "dags", "..", "Bank_Transaction_Fraud_Detection.csv")
-    duckdb_path = os.path.join(os.environ.get("AIRFLOW_HOME", "/opt/airflow"), "include", "bank_data.db")
+from etl.extract import generate_source_tables, ingest_raw_to_duckdb
+from etl.load import validate_datamart
+from etl.transform import run_dbt_build
 
-    # Connect to DuckDB
-    con = duckdb.connect(database=duckdb_path, read_only=False)
-
-    # Read CSV into pandas DataFrame
-    df = pd.read_csv(csv_file_path)
-
-    # Create a raw table in DuckDB and insert data
-    con.execute("DROP TABLE IF EXISTS raw_transactions")
-    con.execute("CREATE TABLE raw_transactions AS SELECT * FROM df")
-
-    con.close()
-
-def transform_data_and_create_datamart():
-    duckdb_path = os.path.join(os.environ.get("AIRFLOW_HOME", "/opt/airflow"), "include", "bank_data.db")
-    con = duckdb.connect(database=duckdb_path, read_only=False)
-
-    # Create Dimension Table: dim_customers
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS dim_customers AS
-        SELECT DISTINCT
-            Customer_ID,
-            Customer_Name,
-            Gender,
-            Age,
-            State,
-            City,
-            Customer_Contact,
-            Customer_Email
-        FROM raw_transactions
-    """)
-
-    # Create Fact Table: fact_transactions
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS fact_transactions AS
-        SELECT
-            Transaction_ID,
-            Customer_ID,
-            Bank_Branch,
-            Account_Type,
-            Transaction_Date,
-            Transaction_Time,
-            Transaction_Amount,
-            Merchant_ID,
-            Transaction_Type,
-            Merchant_Category,
-            Account_Balance,
-            Transaction_Device,
-            Transaction_Location,
-            Device_Type,
-            Is_Fraud,
-            Transaction_Currency,
-            Transaction_Description
-        FROM raw_transactions
-    """)
-
-    con.close()
 
 with DAG(
-    dag_id=\'etl_bank_transactions\',
-    start_date=datetime(2023, 1, 1),
-    schedule_interval=None,
+    dag_id="etl_bank_transactions",
+    start_date=datetime(2026, 4, 1),
+    schedule=None,
     catchup=False,
-    tags=[\'etl\', \'duckdb\', \'bank_fraud\'],
+    default_args={"owner": "dwib-bank", "retries": 2, "retry_delay": timedelta(minutes=5)},
+    tags=["etl", "duckdb", "dbt", "banking"],
 ) as dag:
-    extract_load_task = PythonOperator(
-        task_id=\'extract_and_load_raw_data\',
-        python_callable=extract_and_load_to_duckdb,
+    generate_source_task = PythonOperator(
+        task_id="generate_source_tables",
+        python_callable=generate_source_tables,
+    )
+
+    ingest_raw_task = PythonOperator(
+        task_id="ingest_raw_to_duckdb",
+        python_callable=ingest_raw_to_duckdb,
     )
 
     transform_task = PythonOperator(
-        task_id=\'transform_data_and_create_datamart\',
-        python_callable=transform_data_and_create_datamart,
+        task_id="build_dbt_models",
+        python_callable=run_dbt_build,
     )
 
-    extract_load_task >> transform_task
+    validate_task = PythonOperator(
+        task_id="validate_datamart",
+        python_callable=validate_datamart,
+    )
+
+    generate_source_task >> ingest_raw_task >> transform_task >> validate_task
