@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: Raw source tables generated from the bundled banking transaction dataset.
+    tables:
+      - name: customers_raw
+        description: Customer profile snapshots detected from transactional changes.
+        columns:
+          - name: customer_source_id
+            tests: [not_null]
+          - name: valid_from
+            tests: [not_null]
+      - name: accounts_raw
+        description: Account-level source table derived from customer, branch, and account type.
+        columns:
+          - name: account_id
+            tests: [not_null, unique]
+          - name: customer_source_id
+            tests: [not_null]
+      - name: transactions_raw
+        description: Transaction-level source table with one row per banking event.
+        columns:
+          - name: transaction_id
+            tests: [not_null, unique]
+          - name: account_id
+            tests: [not_null]
+          - name: customer_source_id
+            tests: [not_null]

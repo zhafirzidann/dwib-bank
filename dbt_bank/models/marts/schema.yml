@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: Customer dimension with SCD-style history.
+    columns:
+      - name: customer_key
+        description: Surrogate key for the customer snapshot.
+        tests: [not_null, unique]
+      - name: customer_source_id
+        description: Source-system customer identifier.
+        tests: [not_null]
+
+  - name: dim_accounts
+    description: Account dimension representing branch and account type combinations.
+    columns:
+      - name: account_key
+        tests: [not_null, unique]
+      - name: account_id
+        tests: [not_null, unique]
+      - name: customer_source_id
+        tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_source_id
+
+  - name: dim_date
+    description: Calendar dimension derived from transaction dates.
+    columns:
+      - name: date_key
+        tests: [not_null, unique]
+      - name: full_date
+        tests: [not_null, unique]
+
+  - name: fct_transactions
+    description: Transaction fact table with one row per banking event.
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+      - name: account_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+      - name: transaction_date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+  - name: agg_daily_transactions
+    description: Daily trend summary for transaction volume, amount, and fraud.
+
+  - name: agg_transaction_type_summary
+    description: Summary by transaction type for transaction count, value, and fraud.
+
+  - name: agg_branch_performance
+    description: Branch-level transaction performance summary.
+
+  - name: agg_device_fraud_summary
+    description: Fraud distribution and fraud rate by device type.
+
+  - name: agg_city_fraud_summary
+    description: City and state summary highlighting fraud hotspots.
+
+  - name: agg_merchant_category_summary
+    description: Merchant category performance and fraud summary.
+
+  - name: agg_state_summary
+    description: State-level transaction and fraud summary.
+
+  - name: agg_account_type_summary
+    description: Account portfolio summary by account type.
